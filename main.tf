@@ -3,27 +3,6 @@ data "aws_availability_zones" "available" {
 state = "available"
 }
 
-variable "region" {
-      default = "eu-west-1"
-}
-
-variable "vpc_cidr" {
-    default = "172.16.0.0/16"
-}
-
-variable "enable_dns_support" {
-    default = "true"
-}
-
-variable "enable_dns_hostnames" {
-    default ="true" 
-}
-
-
-  variable "preferred_number_of_public_subnets" {
-      default = 2
-}
-
 provider "aws" {
   region = var.region
 }
@@ -39,7 +18,17 @@ resource "aws_vpc" "main" {
 resource "aws_subnet" "public" {
   count  = var.preferred_number_of_public_subnets == null ? length(data.aws_availability_zones.available.names) : var.preferred_number_of_public_subnets   
   vpc_id = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 4 , count.index)
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8 , count.index)
+  map_public_ip_on_launch = true
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+
+}
+
+# Create private subnets
+resource "aws_subnet" "private" {
+  count  = var.preferred_number_of_private_subnets == null ? length(data.aws_availability_zones.available.names) : var.preferred_number_of_private_subnets   
+  vpc_id = aws_vpc.main.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8 , count.index + 2)
   map_public_ip_on_launch = true
   availability_zone       = data.aws_availability_zones.available.names[count.index]
 
